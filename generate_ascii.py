@@ -1,8 +1,13 @@
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
-def image_to_ascii(image_path: str, width: int = 80, ratioW: int = 1, ratioH: float = 2.5 ) -> str:
+def image_to_ascii(image_path: str, width: int = 80, ratioH: float = 2.5, ratioW: int = 1) -> str:
     chars = "@%#*+=-:. "  # Символы для отображения (от плотных к редким)
-    img = Image.open(image_path)
+    try:
+        img = Image.open(image_path)
+    except UnidentifiedImageError:
+        text_error = 'UnidentifiedImageError'
+        return text_error
+    
     img = img.resize((int(width*ratioW), int(img.height * width / img.width / ratioH)))  # Масштабирование
     img = img.convert("L")  # Перевод в оттенки серого
 
@@ -24,5 +29,4 @@ def generate_ascii_file(file_name, text, encoding="utf-8"):
 if __name__ == '__main__':
     ascii_art = image_to_ascii("hp.jpg", width=40)
     print(ascii_art)
-
     generate_ascii_file(file_name="result.txt", text=ascii_art)
