@@ -87,19 +87,16 @@ class MyWidget(QtWidgets.QTableWidget):
         self.text_edit = QTextEdit()
         self.text_edit.setLineWrapMode(QTextEdit.NoWrap)
         self.layout.addWidget(self.text_edit)
+        self.font = QFont("Cascadia Mono Light")
+        self.text_edit.setFont(self.font)
+        
 
     def open_file_dialog(self):
         # Открыть диалоговое окно для выбора файла
         self.file_path, _ = QFileDialog.getOpenFileName(
                     self, "Выберите файл", "", "Все файлы (*.*);;Изображения (*.png *.jpg *.bmp);;Текстовые файлы (*.txt)")
-        if self.file_path:
-            self.label.setText(f"Выбран файл:\n{self.file_path}")
-            ascii_art = generate_ascii.image_to_ascii(self.file_path, self.win_size, self.ratio_height)
-            font = QFont("Cascadia Mono Light")
-            self.text_edit.setFont(font)
-            self.text_edit.setText(ascii_art)
-        else:
-            self.label.setText("Файл не выбран")
+        
+        self.update_ascii_art()  # Правильный вызов
 
     def save_to_downloads(self):
         if not self.file_path:
@@ -110,7 +107,7 @@ class MyWidget(QtWidgets.QTableWidget):
         file_name = "image.txt"
         save_path = os.path.join(downloads_path, file_name)
         try:
-            ascii_art = generate_ascii.image_to_ascii(self.file_path, self.win_size, self.ratio_height) 
+            ascii_art = generate_ascii.image_to_ascii(self.file_path, self.win_size, self.ratio_height, self.reversed, self.chars) 
             with open(save_path, 'w') as f:
                 f.write(ascii_art)
             QMessageBox.information(self, "Успех", f"Файл сохранён в: {save_path}")
@@ -119,36 +116,44 @@ class MyWidget(QtWidgets.QTableWidget):
 
     def update_ascii_art(self):
         if self.file_path:
+            print(self.reversed)
             ascii_art = generate_ascii.image_to_ascii(self.file_path, self.win_size, self.ratio_height, self.reversed, self.chars)
-            font = QFont("Cascadia Mono Light")
-            self.text_edit.setFont(font)
-            self.text_edit.setText(ascii_art)
+            if ascii_art == "UnidentifiedImageError":
+                 QMessageBox.critical(self, "Ошибка", f"Не удалось открыть файл: {ascii_art}")
+                 self.open_file_dialog()
+            else:
+                self.label.setText("Файл открыт")
+                self.text_edit.setText(ascii_art)
+        else:
+            self.label.setText("Введите путь до изображения!")
 
     def update_width(self, value):
-        if self.file_path:
-            self.win_size = value
-            self.update_ascii_art()
+        self.win_size = value
+        self.update_ascii_art()
 
     def slider_ratio(self, value):
-        if self.file_path:
-            self.ratio_height = value / 100
-            self.update_ascii_art()
+        self.ratio_height = value / 100
+        self.update_ascii_art()
 
     def reversed_image(self, value):
-            self.reversed = value
-            if self.file_path:
-               self.update_ascii_art()
+        self.reversed =  value
+        print(self.reversed)
+        self.update_ascii_art()
 
     def choice_chars(self):
-        text = self.line_edit.text()
-        self.chars = text
-        if len(text) >= 1 and text  !=  ' ': 
+        text = set(self.line_edit.text())         
+
+        if len(text) > 1: 
             self.label.setText("ok")
+            self.chars = ''.join(text)
             self.update_ascii_art()
         else:
-            self.chars = "@%#*+=-:. "
-        if text.count(' ') > 1: 
-            self.label.setText("ввести можно только 1 пробел")
+            self.label.setText("Введите минимум 2 разных символа!")
+
+        if len(text) == 0:
+            self.chars='@%#*+=-:. '
+            self.update_ascii_art()
+            self.label.setText("Символы по умолчанию")
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
